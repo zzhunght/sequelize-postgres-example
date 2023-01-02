@@ -31,7 +31,7 @@ function initModels(sequelize) {
   OrderDetails.belongsTo(Products, { as: "product", foreignKey: "productId"});
   Products.hasMany(OrderDetails, { as: "OrderDetails", foreignKey: "productId"});
   Cart.belongsTo(User, { as: "user", foreignKey: "userId"});
-  User.hasMany(Cart, { as: "Carts", foreignKey: "userId"});
+  User.hasOne(Cart, { as: "Carts", foreignKey: "userId"});
   Order.belongsTo(User, { as: "user", foreignKey: "userId"});
   User.hasMany(Order, { as: "Orders", foreignKey: "userId"});
 

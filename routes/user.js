@@ -1,20 +1,44 @@
 const argon2= require('argon2')
 const express = require('express')
 const router = express.Router()
-const {User,Cart } = require('../Database/init-models')
+const {User,Cart,CartDetails,Products,Brand } = require('../Database/init-models')
 
-router.get('/login', async function(req, res){
+router.post('/login', async function(req, res){
+    console.log('aaaa',req.body)
     try {
         const body = await req.body
         const user = await User.findOne({ 
+            attributes:['id','name','password','phone','address','email','gender'],
             where: {
                 email: req.body.email
-            }
+            },
+            include: {
+                model: Cart,
+                as:'Carts',
+                attributes:['id', 'userId'],
+                include:{
+                    attributes:['id','cartId','productId','amount'],
+                    model: CartDetails,
+                    as:'CartDetails',
+                    include:{
+                        attributes:['id','name','description','price','discount','image'],
+                        model:Products,
+                        as:'product',
+                        include:{
+                            model:Brand,
+                            as:'Brand',
+                            attributes:['brand','id']
+                        }
+                    }
+                }
+            },
         })
         const compare = await argon2.verify(user.password,body.password)
         if (compare){
-            res.json({
-                success: true,
+            delete user.dataValues.password
+            console.log(user)
+            return res.json({
+                success: true, 
                 user: user
             })
         }
@@ -31,24 +55,35 @@ router.get('/login', async function(req, res){
     
 })  
 router.post('/register', async function(req, res){
+    console.log("dang kys",req.body)
     try {
         const body = req.body
-        
-        const hashpass = await argon2.hash(body.password)
-        const newUser = await User.create({
-            ...body,
-            password: hashpass
+        const user = await User.findOne({
+            where: {
+                email: req.body.email
+            }
         })
-        const newCart = await Cart.create({
-            userId: newUser.id
-        })
+        if(!user){
+            const hashpass = await argon2.hash(body.password)
+            const newUser = await User.create({
+                ...body,
+                password: hashpass
+            })
+            const newCart = await Cart.create({
+                userId: newUser.id
+            })
+            return res.json({
+                success:true,
+                message:"Dang kys thanh cong"
+            })
+        }
         return res.json({
-            newCart,
-            newUser
+            message: "Dang ky that bai",
+            success: false
         })
     } catch (error) {
         return res.json({
-            message: error.message,
+            message: "Dang ky that bai",
             success: false
         })
     }
